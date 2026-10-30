@@ -57,8 +57,7 @@ struct LibraryView: View {
                                     installApp(app)
                                 }) {
                                     Label("Install", systemImage: "arrow.down.circle.fill")
-                                        .font(.caption)
-                                        .bold()
+                                        .font(.caption.weight(.bold))
                                         .padding(.horizontal, 14)
                                         .padding(.vertical, 6)
                                         .background(Color.cyan)

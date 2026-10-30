@@ -21,7 +21,7 @@ class CertificateManager: ObservableObject {
     var certsDirectory: URL {
         let dir = documentsDirectory.appendingPathComponent("Certificates", isDirectory: true)
         if !FileManager.default.fileExists(atPath: dir.path) {
-            try? FileManager.default.createDirectory(at, withIntermediateDirectories: true)
+            try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         }
         return dir
     }

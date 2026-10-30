@@ -24,8 +24,7 @@ struct SignerView: View {
                                 .foregroundColor(.cyan)
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(url.lastPathComponent)
-                                    .font(.subheadline)
-                                    .bold()
+                                    .font(.subheadline.weight(.bold))
                                     .lineLimit(1)
                                 Text("Ready to customize & sign")
                                     .font(.caption)
@@ -82,8 +81,7 @@ struct SignerView: View {
                         HStack {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(cert.name)
-                                    .font(.subheadline)
-                                    .bold()
+                                    .font(.subheadline.weight(.bold))
                                 Text(cert.statusDescription)
                                     .font(.caption)
                                     .foregroundColor(cert.isExpired ? .red : .green)
@@ -125,7 +123,7 @@ struct SignerView: View {
                                     .padding(.trailing, 6)
                             }
                             Text(signerService.isSigning ? "Signing Application..." : "Sign Application")
-                                .bold()
+                                .font(.body.weight(.bold))
                                 .foregroundColor(canSign ? .cyan : .gray)
                             Spacer()
                         }

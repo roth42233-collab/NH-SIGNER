@@ -61,8 +61,7 @@ struct CertificatesView: View {
                                     certManager.selectCertificate(cert)
                                 }) {
                                     Text(cert.isSelected ? "Active" : "Use")
-                                        .font(.caption)
-                                        .bold()
+                                        .font(.caption.weight(.bold))
                                         .padding(.horizontal, 12)
                                         .padding(.vertical, 6)
                                         .background(cert.isSelected ? Color.cyan : Color.gray.opacity(0.3))
@@ -162,9 +161,9 @@ struct PasswordInputView: View {
                         onConfirm()
                     }) {
                         Text("Unlock & Import")
+                            .font(.body.weight(.bold))
                             .frame(maxWidth: .infinity)
                             .foregroundColor(.cyan)
-                            .bold()
                     }
                 }
             }
