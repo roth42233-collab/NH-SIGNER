@@ -48,18 +48,15 @@ jobs:
           if-no-files-found: error
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/heads/main')
-        with:
-          tag_name: v1.0.0-${{ github.run_number }}
-          name: "NH-Signer iOS v1.0.0 (Build ${{ github.run_number }})"
-          body: |
-            ## NH-Signer iOS Sideloading App
-            - Pure native Swift implementation
-            - Zero external dependencies
-            - Local OTA itms-services installation server
-            - P12 & Mobileprovision certificate manager
-            - Custom app bundle ID, display name, and versioning
-          files: NH-Signer.ipa
+        run: |
+          gh release create "v1.0.0-${{ github.run_number }}" NH-Signer.ipa \
+            --title "NH-Signer iOS v1.0.0 (Build ${{ github.run_number }})" \
+            --notes "## NH-Signer iOS Sideloading App
+          - Pure native Swift implementation
+          - Zero external dependencies
+          - Local OTA itms-services installation server
+          - P12 & Mobileprovision certificate manager
+          - Custom app bundle ID, display name, and versioning"
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
