@@ -15,6 +15,7 @@ clean:
 	rm -rf Payload
 
 deps:
+
 	rm -rf deps || true
 	mkdir -p deps
 
@@ -29,7 +30,7 @@ $(PLATFORMS): deps
 
 	DEST="generic/platform=iOS"; \
 	xcodebuild \
-		-project Feather.xcodeproj \
+		-workspace Feather.xcworkspace \
 		-scheme $(SCHEME) \
 		-configuration Release \
 		-destination "$$DEST" \
