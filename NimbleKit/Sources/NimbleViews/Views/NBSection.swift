@@ -61,8 +61,7 @@ public struct NBSection<Content, Footer>: View
 				Spacer()
                     
 				if let _headerTextSecondary {
-					if #available(iOS 26.0, *) {
-						Text(_headerTextSecondary)
+					Text(_headerTextSecondary)
 							.font(.caption)
 							.foregroundStyle(.secondary)
 							.contentTransition(.numericText())
@@ -70,17 +69,6 @@ public struct NBSection<Content, Footer>: View
 							.padding(.vertical, 4.4)
 							.background(Color(uiColor: .quaternarySystemFill))
 							.clipShape(Capsule())
-							.glassEffect()
-					} else {
-						Text(_headerTextSecondary)
-							.font(.caption)
-							.foregroundStyle(.secondary)
-							.contentTransition(.numericText())
-							.padding(.horizontal, 8)
-							.padding(.vertical, 4.4)
-							.background(Color(uiColor: .quaternarySystemFill))
-							.clipShape(Capsule())
-					}
 				}
 			}
 			.offset(y: 2)
