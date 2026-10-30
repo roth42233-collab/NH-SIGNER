@@ -69,25 +69,29 @@ class CertificateManager: ObservableObject {
             let p12Data = try Data(contentsOf: p12URL)
             let provData = try Data(contentsOf: provisionURL)
 
-            // Validate PKCS12 with Security framework
-            var options: [String: Any] = [:]
-            if !password.isEmpty {
-                options[kSecImportExportPassphrase as String] = password
-            } else {
-                options[kSecImportExportPassphrase as String] = ""
-            }
-            var items: CFArray?
-            let status = SecPKCS12Import(p12Data as CFData, options as CFDictionary, &items)
-
-            guard status == errSecSuccess else {
-                let msg: String
-                switch status {
-                case errSecAuthFailed, errSecDecode:
-                    msg = "Incorrect certificate password (password is required)."
-                default:
-                    msg = "Certificate error (code \(status)). Please check password."
+            // Validate PKCS12 with Security framework (with intelligent auto-fallback)
+            var candidates = [password]
+            let commonFallbacks = ["1", "", "1234", "apple", "123456", "password"]
+            for fb in commonFallbacks {
+                if !candidates.contains(fb) {
+                    candidates.append(fb)
                 }
-                return .failure(NSError(domain: "CertificateManager", code: Int(status), userInfo: [NSLocalizedDescriptionKey: msg]))
+            }
+
+            var verifiedPassword: String?
+            for pwd in candidates {
+                let options: [String: Any] = [kSecImportExportPassphrase as String: pwd]
+                var items: CFArray?
+                let status = SecPKCS12Import(p12Data as CFData, options as CFDictionary, &items)
+                if status == errSecSuccess {
+                    verifiedPassword = pwd
+                    break
+                }
+            }
+
+            guard let finalPassword = verifiedPassword else {
+                let msg = "Incorrect certificate password. Please enter the correct password."
+                return .failure(NSError(domain: "CertificateManager", code: -1, userInfo: [NSLocalizedDescriptionKey: msg]))
             }
 
             // Parse MobileProvision plist embedded in ASN.1 CMS wrapper
@@ -112,7 +116,7 @@ class CertificateManager: ObservableObject {
                 expirationDate: expiryDate ?? Date().addingTimeInterval(365 * 86400),
                 p12FileName: p12DestName,
                 provisionFileName: provDestName,
-                password: password,
+                password: finalPassword,
                 isSelected: true
             )
 
