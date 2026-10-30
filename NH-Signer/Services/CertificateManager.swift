@@ -1,4 +1,3 @@
-
 import Foundation
 import Security
 import Combine
@@ -83,12 +82,10 @@ class CertificateManager: ObservableObject {
             guard status == errSecSuccess else {
                 let msg: String
                 switch status {
-                case errSecAuthFailed:
-                    msg = "Incorrect certificate password."
-                case errSecDecode:
-                    msg = "Corrupted or invalid .p12 certificate file."
+                case errSecAuthFailed, errSecDecode:
+                    msg = "Incorrect certificate password (password is required)."
                 default:
-                    msg = "Certificate validation error (code \(status))."
+                    msg = "Certificate error (code \(status)). Please check password."
                 }
                 return .failure(NSError(domain: "CertificateManager", code: Int(status), userInfo: [NSLocalizedDescriptionKey: msg]))
             }
