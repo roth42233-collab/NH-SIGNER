@@ -3,21 +3,7 @@ import UniformTypeIdentifiers
 
 struct CertificatesView: View {
     @EnvironmentObject var certManager: CertificateManager
-
-    @State private var showingImporter = false
-    @State private var importStep: ImportStep = .none
-    @State private var selectedP12URL: URL?
-    @State private var selectedProvisionURL: URL?
-    @State private var password: String = ""
-    @State private var alertMessage: String = ""
-    @State private var showAlert = false
-
-    enum ImportStep {
-        case none
-        case pickingP12
-        case pickingProvision
-        case enteringPassword
-    }
+    @State private var showingImportModal = false
 
     var body: some View {
         NavigationView {
@@ -30,7 +16,7 @@ struct CertificatesView: View {
                                 .foregroundColor(.gray)
                             Text("No Certificates Found")
                                 .font(.headline)
-                            Text("Import a .p12 and .mobileprovision file using the + button below.")
+                            Text("Tap the '+' button at the top right to import your .p12 and .mobileprovision certificate.")
                                 .font(.caption)
                                 .foregroundColor(.gray)
                                 .multilineTextAlignment(.center)
@@ -76,10 +62,10 @@ struct CertificatesView: View {
                 }
 
                 Section(header: Text("Instructions")) {
-                    Text("1. Tap 'Import Certificate' button.")
-                    Text("2. Select your Apple Development/Distribution .p12 file.")
-                    Text("3. Select your matching .mobileprovision profile.")
-                    Text("4. Enter certificate password to unlock.")
+                    Text("1. Tap the '+' button at the top right.")
+                    Text("2. Choose your .p12 and .mobileprovision files.")
+                    Text("3. Enter password (if any) and tap 'Unlock & Import'.")
+                    Text("4. Once imported, it will automatically be selected for signing.")
                 }
                 .font(.caption)
                 .foregroundColor(.gray)
@@ -88,8 +74,7 @@ struct CertificatesView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: {
-                        importStep = .pickingP12
-                        showingImporter = true
+                        showingImportModal = true
                     }) {
                         Image(systemName: "plus.circle.fill")
                             .font(.title3)
@@ -97,96 +82,170 @@ struct CertificatesView: View {
                     }
                 }
             }
-            .sheet(isPresented: $showingImporter) {
-                DocumentPickerView(
-                    step: importStep,
-                    onPickP12: { url in
-                        selectedP12URL = url
-                        showingImporter = false
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                            importStep = .pickingProvision
-                            showingImporter = true
-                        }
-                    },
-                    onPickProvision: { url in
-                        selectedProvisionURL = url
-                        showingImporter = false
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                            importStep = .enteringPassword
-                        }
-                    }
-                )
-            }
-            .sheet(isPresented: Binding(
-                get: { importStep == .enteringPassword },
-                set: { if !$0 { importStep = .none } }
-            )) {
-                PasswordInputView(password: $password) {
-                    guard let p12 = selectedP12URL, let prov = selectedProvisionURL else { return }
-                    let result = certManager.importCertificate(p12URL: p12, provisionURL: prov, password: password)
-                    switch result {
-                    case .success(let cert):
-                        alertMessage = "Certificate '\(cert.name)' imported successfully!"
-                        showAlert = true
-                        importStep = .none
-                    case .failure(let err):
-                        alertMessage = "Import failed: \(err.localizedDescription)"
-                        showAlert = true
-                        importStep = .none
-                    }
-                }
-            }
-            .alert(isPresented: $showAlert) {
-                Alert(title: Text("Certificate Import"), message: Text(alertMessage), dismissButton: .default(Text("OK")))
+            .sheet(isPresented: $showingImportModal) {
+                ImportCertificateSheet(isPresented: $showingImportModal)
+                    .environmentObject(certManager)
             }
         }
     }
 }
 
-struct PasswordInputView: View {
-    @Binding var password: String
-    var onConfirm: () -> Void
-    @Environment(\.presentationMode) var presentationMode
+struct ImportCertificateSheet: View {
+    @Binding var isPresented: Bool
+    @EnvironmentObject var certManager: CertificateManager
+
+    @State private var p12URL: URL?
+    @State private var provisionURL: URL?
+    @State private var password = ""
+    @State private var errorMessage = ""
+    @State private var isProcessing = false
+
+    @State private var pickingType: PickerTarget?
+
+    enum PickerTarget: Identifiable {
+        case p12
+        case provision
+        var id: Int { hashValue }
+    }
 
     var body: some View {
         NavigationView {
             Form {
-                Section(header: Text("Certificate Password")) {
-                    SecureField("Enter P12 Password", text: $password)
+                Section(header: Text("1. Select Certificate Files")) {
+                    // P12 row
+                    Button(action: {
+                        pickingType = .p12
+                    }) {
+                        HStack {
+                            Image(systemName: "lock.shield.fill")
+                                .foregroundColor(p12URL != nil ? .green : .cyan)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(p12URL?.lastPathComponent ?? "Choose .p12 File")
+                                    .font(.subheadline)
+                                    .foregroundColor(.white)
+                                Text(p12URL != nil ? "Ready" : "PKCS12 Certificate")
+                                    .font(.caption2)
+                                    .foregroundColor(.gray)
+                            }
+                            Spacer()
+                            Image(systemName: p12URL != nil ? "checkmark.circle.fill" : "chevron.right")
+                                .foregroundColor(p12URL != nil ? .green : .gray)
+                        }
+                    }
+
+                    // Mobileprovision row
+                    Button(action: {
+                        pickingType = .provision
+                    }) {
+                        HStack {
+                            Image(systemName: "doc.badge.gearshape.fill")
+                                .foregroundColor(provisionURL != nil ? .green : .cyan)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(provisionURL?.lastPathComponent ?? "Choose .mobileprovision File")
+                                    .font(.subheadline)
+                                    .foregroundColor(.white)
+                                Text(provisionURL != nil ? "Ready" : "Provisioning Profile")
+                                    .font(.caption2)
+                                    .foregroundColor(.gray)
+                            }
+                            Spacer()
+                            Image(systemName: provisionURL != nil ? "checkmark.circle.fill" : "chevron.right")
+                                .foregroundColor(provisionURL != nil ? .green : .gray)
+                        }
+                    }
+                }
+
+                Section(header: Text("2. Certificate Password")) {
+                    SecureField("Enter P12 password (blank if none)", text: $password)
+                        .autocapitalization(.none)
+                        .disableAutocorrection(true)
+                }
+
+                if !errorMessage.isEmpty {
+                    Section {
+                        HStack(alignment: .top, spacing: 8) {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .foregroundColor(.red)
+                            Text(errorMessage)
+                                .font(.footnote)
+                                .foregroundColor(.red)
+                        }
+                    }
                 }
 
                 Section {
-                    Button(action: {
-                        presentationMode.wrappedValue.dismiss()
-                        onConfirm()
-                    }) {
-                        Text("Unlock & Import")
-                            .font(.body.weight(.bold))
-                            .frame(maxWidth: .infinity)
-                            .foregroundColor(.cyan)
+                    Button(action: processImport) {
+                        HStack {
+                            Spacer()
+                            if isProcessing {
+                                ProgressView()
+                                    .padding(.trailing, 8)
+                            }
+                            Text(isProcessing ? "Verifying..." : "Unlock & Import Certificate")
+                                .font(.body.weight(.bold))
+                                .foregroundColor(canImport ? .cyan : .gray)
+                            Spacer()
+                        }
                     }
+                    .disabled(!canImport || isProcessing)
                 }
             }
-            .navigationTitle("P12 Password")
-            .navigationBarItems(leading: Button("Cancel") {
-                presentationMode.wrappedValue.dismiss()
-            })
+            .navigationTitle("Import Certificate")
+            .navigationBarItems(
+                leading: Button("Cancel") {
+                    isPresented = false
+                }
+            )
+            .sheet(item: $pickingType) { target in
+                SingleDocumentPicker(target: target) { fileURL in
+                    if target == .p12 {
+                        p12URL = fileURL
+                    } else {
+                        provisionURL = fileURL
+                    }
+                    errorMessage = ""
+                }
+            }
+        }
+    }
+
+    private var canImport: Bool {
+        return p12URL != nil && provisionURL != nil
+    }
+
+    private func processImport() {
+        guard let p12 = p12URL, let prov = provisionURL else { return }
+        isProcessing = true
+        errorMessage = ""
+
+        DispatchQueue.global(qos: .userInitiated).async {
+            let result = certManager.importCertificate(p12URL: p12, provisionURL: prov, password: password)
+
+            DispatchQueue.main.async {
+                isProcessing = false
+                switch result {
+                case .success:
+                    isPresented = false
+                case .failure(let err):
+                    errorMessage = err.localizedDescription
+                }
+            }
         }
     }
 }
 
-struct DocumentPickerView: UIViewControllerRepresentable {
-    let step: CertificatesView.ImportStep
-    let onPickP12: (URL) -> Void
-    let onPickProvision: (URL) -> Void
+struct SingleDocumentPicker: UIViewControllerRepresentable {
+    let target: ImportCertificateSheet.PickerTarget
+    let onPick: (URL) -> Void
 
     func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
-        let types: [UTType] = (step == .pickingP12)
+        let types: [UTType] = (target == .p12)
             ? [UTType(filenameExtension: "p12") ?? .data]
             : [UTType(filenameExtension: "mobileprovision") ?? .data]
 
         let picker = UIDocumentPickerViewController(forOpeningContentTypes: types, asCopy: true)
         picker.delegate = context.coordinator
+        picker.allowsMultipleSelection = false
         return picker
     }
 
@@ -197,18 +256,33 @@ struct DocumentPickerView: UIViewControllerRepresentable {
     }
 
     class Coordinator: NSObject, UIDocumentPickerDelegate {
-        let parent: DocumentPickerView
+        let parent: SingleDocumentPicker
 
-        init(_ parent: DocumentPickerView) {
+        init(_ parent: SingleDocumentPicker) {
             self.parent = parent
         }
 
         func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
             guard let url = urls.first else { return }
-            if parent.step == .pickingP12 {
-                parent.onPickP12(url)
-            } else {
-                parent.onPickProvision(url)
+
+            let isScoped = url.startAccessingSecurityScopedResource()
+            defer {
+                if isScoped {
+                    url.stopAccessingSecurityScopedResource()
+                }
+            }
+
+            let tempDir = FileManager.default.temporaryDirectory
+            let targetURL = tempDir.appendingPathComponent("\(UUID().uuidString)_\(url.lastPathComponent)")
+
+            do {
+                let data = try Data(contentsOf: url)
+                try data.write(to: targetURL)
+                DispatchQueue.main.async {
+                    self.parent.onPick(targetURL)
+                }
+            } catch {
+                print("Error copying picked file: \(error)")
             }
         }
     }

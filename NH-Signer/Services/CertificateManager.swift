@@ -1,3 +1,4 @@
+
 import Foundation
 import Security
 import Combine
@@ -70,12 +71,26 @@ class CertificateManager: ObservableObject {
             let provData = try Data(contentsOf: provisionURL)
 
             // Validate PKCS12 with Security framework
-            let options: [String: Any] = [kSecImportExportPassphrase as String: password]
+            var options: [String: Any] = [:]
+            if !password.isEmpty {
+                options[kSecImportExportPassphrase as String] = password
+            } else {
+                options[kSecImportExportPassphrase as String] = ""
+            }
             var items: CFArray?
             let status = SecPKCS12Import(p12Data as CFData, options as CFDictionary, &items)
 
             guard status == errSecSuccess else {
-                return .failure(NSError(domain: "CertificateManager", code: Int(status), userInfo: [NSLocalizedDescriptionKey: "Invalid P12 password or corrupted certificate file"]))
+                let msg: String
+                switch status {
+                case errSecAuthFailed:
+                    msg = "Incorrect certificate password."
+                case errSecDecode:
+                    msg = "Corrupted or invalid .p12 certificate file."
+                default:
+                    msg = "Certificate validation error (code \(status))."
+                }
+                return .failure(NSError(domain: "CertificateManager", code: Int(status), userInfo: [NSLocalizedDescriptionKey: msg]))
             }
 
             // Parse MobileProvision plist embedded in ASN.1 CMS wrapper
@@ -88,6 +103,11 @@ class CertificateManager: ObservableObject {
             try p12Data.write(to: certsDirectory.appendingPathComponent(p12DestName))
             try provData.write(to: certsDirectory.appendingPathComponent(provDestName))
 
+            // Unselect previous certificates
+            for i in certificates.indices {
+                certificates[i].isSelected = false
+            }
+
             let cert = CertificateModel(
                 id: id,
                 name: teamName.isEmpty ? p12URL.deletingPathExtension().lastPathComponent : teamName,
@@ -96,13 +116,11 @@ class CertificateManager: ObservableObject {
                 p12FileName: p12DestName,
                 provisionFileName: provDestName,
                 password: password,
-                isSelected: certificates.isEmpty
+                isSelected: true
             )
 
-            certificates.append(cert)
-            if activeCertificate == nil {
-                activeCertificate = cert
-            }
+            certificates.insert(cert, at: 0)
+            activeCertificate = cert
             saveCertificates()
             return .success(cert)
         } catch {

@@ -34,6 +34,7 @@ struct SignerView: View {
                             Button("Change") {
                                 showFilePicker = true
                             }
+                            
                             .font(.caption)
                             .foregroundColor(.cyan)
                         }
@@ -194,8 +195,31 @@ struct IPAPickerView: UIViewControllerRepresentable {
         init(_ parent: IPAPickerView) { self.parent = parent }
 
         func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
-            if let url = urls.first {
-                parent.onPick(url)
+            guard let url = urls.first else { return }
+
+            let isScoped = url.startAccessingSecurityScopedResource()
+            defer {
+                if isScoped {
+                    url.stopAccessingSecurityScopedResource()
+                }
+            }
+
+            let tempDir = FileManager.default.temporaryDirectory
+            let targetURL = tempDir.appendingPathComponent("\(UUID().uuidString)_\(url.lastPathComponent)")
+
+            do {
+                if FileManager.default.fileExists(atPath: targetURL.path) {
+                    try FileManager.default.removeItem(at: targetURL)
+                }
+                try FileManager.default.copyItem(at: url, to: targetURL)
+                DispatchQueue.main.async {
+                    self.parent.onPick(targetURL)
+                }
+            } catch {
+                print("Error caching picked IPA: \(error)")
+                DispatchQueue.main.async {
+                    self.parent.onPick(url)
+                }
             }
         }
     }
