@@ -1,6 +1,6 @@
-NAME := Feather
+NAME := NH-Signer
 SCHEME := Feather
-PLATFORMS := iphoneos maccatalyst
+PLATFORMS := iphoneos
 
 TMP := $(TMPDIR)/$(NAME)
 CERT_JSON_URL := https://backloop.dev/pack.json
@@ -27,11 +27,7 @@ deps:
 $(PLATFORMS): deps
 	rm -rf _build
 
-	@if [ "$@" = "iphoneos" ]; then \
-		DEST="generic/platform=iOS"; \
-	else \
-		DEST="generic/platform=macOS,variant=Mac Catalyst"; \
-	fi; \
+	DEST="generic/platform=iOS"; \
 	xcodebuild \
 		-project Feather.xcodeproj \
 		-scheme $(SCHEME) \
@@ -43,15 +39,11 @@ $(PLATFORMS): deps
 		ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES=NO
 
 	mkdir -p _build/Payload
-	cp -R _build/Applications/*.app _build/Payload/Feather.app
-	chmod -R 0755 _build/Payload/Feather.app
-	codesign --force --sign - --timestamp=none _build/Payload/Feather.app
-	cp deps/* _build/Payload/Feather.app/ || true
+	cp -R _build/Applications/*.app _build/Payload/NH-Signer.app
+	chmod -R 0755 _build/Payload/NH-Signer.app
+	codesign --force --sign - --timestamp=none _build/Payload/NH-Signer.app
+	cp deps/* _build/Payload/NH-Signer.app/ || true
 
 	mkdir -p packages
+	ditto -c -k --sequesterRsrc --keepParent _build/Payload "packages/NH-Signer.ipa"
 
-	@if [ "$@" = "iphoneos" ]; then \
-		ditto -c -k --sequesterRsrc --keepParent _build/Payload "packages/Feather.ipa"; \
-	else \
-		ditto -c -k --sequesterRsrc --keepParent _build/Payload/Feather.app "packages/Feather_Catalyst.zip"; \
-	fi
