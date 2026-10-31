@@ -39,6 +39,13 @@ $(PLATFORMS): deps
 		CODE_SIGNING_REQUIRED=NO \
 		CODE_SIGN_IDENTITY="" \
 		ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES=NO \
+		STRIP_INSTALLED_PRODUCT=YES \
+		COPY_PHASE_STRIP=YES \
+		STRIPFLAGS="-rSTx" \
+		DEPLOYMENT_POSTPROCESSING=YES \
+		DEAD_CODE_STRIPPING=YES \
+		SWIFT_OPTIMIZATION_LEVEL="-Osize" \
+		COMPRESS_PNG_FILES=YES \
 		SWIFT_STRICT_CONCURRENCY=minimal \
 		SWIFT_TREAT_WARNINGS_AS_ERRORS=NO \
 		archive
@@ -46,8 +53,16 @@ $(PLATFORMS): deps
 	mkdir -p Payload
 	cp -R build/$(NAME).xcarchive/Products/Applications/*.app Payload/$(NAME).app
 	chmod -R 0755 Payload/$(NAME).app
+
+	# Strip symbols to significantly reduce IPA size
+	find Payload/$(NAME).app -name "*.dylib" -exec strip -S {} + 2>/dev/null || true
+	find Payload/$(NAME).app/Frameworks -type f -exec strip -S {} + 2>/dev/null || true
+	strip -rSTx "Payload/$(NAME).app/$(SCHEME)" 2>/dev/null || strip -S "Payload/$(NAME).app/$(SCHEME)" 2>/dev/null || true
+	rm -rf Payload/$(NAME).app/*.dSYM Payload/$(NAME).app/_CodeSignature 2>/dev/null || true
+
 	codesign --force --sign - --timestamp=none Payload/$(NAME).app || true
 	cp deps/* Payload/$(NAME).app/ || true
 
 	mkdir -p packages
-	ditto -c -k --sequesterRsrc --keepParent Payload "packages/$(NAME).ipa"
+	# Maximum zip compression level 9
+	cd Payload && zip -9 -r -y "../packages/$(NAME).ipa" "$(NAME).app" && cd ..
