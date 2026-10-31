@@ -7,6 +7,11 @@ class LocalOTAServer: ObservableObject {
 
     @Published var isRunning: Bool = false
     @Published var port: UInt16 = 8088
+    @Published var tunnelURL: String = UserDefaults.standard.string(forKey: "NH_TUNNEL_URL") ?? "" {
+        didSet {
+            UserDefaults.standard.set(tunnelURL, forKey: "NH_TUNNEL_URL")
+        }
+    }
 
     private var listener: NWListener?
     private var ipaDirectory: URL {
@@ -128,12 +133,24 @@ class LocalOTAServer: ObservableObject {
         let bundleEncoded = app.bundleIdentifier.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "com.app"
         let fileEncoded = URL(fileURLWithPath: app.filePath).lastPathComponent.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
 
-        let manifestURL = "http://127.0.0.1:\(port)/manifest.plist?name=\(nameEncoded)&bundle=\(bundleEncoded)&file=\(fileEncoded)"
+        var baseURL = "http://127.0.0.1:\(port)"
+        let trimmedTunnel = tunnelURL.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmedTunnel.isEmpty {
+            baseURL = trimmedTunnel.hasSuffix("/") ? String(trimmedTunnel.dropLast()) : trimmedTunnel
+        }
+
+        let manifestURL = "\(baseURL)/manifest.plist?name=\(nameEncoded)&bundle=\(bundleEncoded)&file=\(fileEncoded)"
         let manifestEncoded = manifestURL.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? manifestURL
         return URL(string: "itms-services://?action=download-manifest&url=\(manifestEncoded)")
     }
 
     private func generateManifest(appName: String, bundleId: String, fileName: String) -> String {
+        var baseURL = "http://127.0.0.1:\(port)"
+        let trimmedTunnel = tunnelURL.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmedTunnel.isEmpty {
+            baseURL = trimmedTunnel.hasSuffix("/") ? String(trimmedTunnel.dropLast()) : trimmedTunnel
+        }
+
         return """
         <?xml version="1.0" encoding="UTF-8"?>
         <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -148,7 +165,7 @@ class LocalOTAServer: ObservableObject {
                             <key>kind</key>
                             <string>software-package</string>
                             <key>url</key>
-                            <string>http://127.0.0.1:\(port)/download/\(fileName)</string>
+                            <string>\(baseURL)/download/\(fileName)</string>
                         </dict>
                     </array>
                     <key>metadata</key>

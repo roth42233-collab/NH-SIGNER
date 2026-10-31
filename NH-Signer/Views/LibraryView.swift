@@ -6,6 +6,8 @@ struct LibraryView: View {
 
     @State private var shareURL: URL?
     @State private var isSharing = false
+    @State private var showHttpsAlert = false
+    @State private var selectedAppForExport: AppModel?
 
     var body: some View {
         NavigationView {
@@ -92,10 +94,28 @@ struct LibraryView: View {
                     ActivityView(activityItems: [url])
                 }
             }
+            .alert(isPresented: $showHttpsAlert) {
+                Alert(
+                    title: Text("Direct Install Notice"),
+                    message: Text("Apple requires an HTTPS URL to display the on-device install prompt. You can configure your Cloudflare HTTPS Tunnel in Settings, or tap 'Export' to install directly via Files, TrollStore, or Scarlet."),
+                    primaryButton: .default(Text("Export File")) {
+                        if let app = selectedAppForExport {
+                            shareApp(app)
+                        }
+                    },
+                    secondaryButton: .cancel(Text("OK"))
+                )
+            }
         }
     }
 
     private func installApp(_ app: AppModel) {
+        if otaServer.tunnelURL.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            selectedAppForExport = app
+            showHttpsAlert = true
+            return
+        }
+
         if let installURL = otaServer.generateInstallURL(app: app) {
             UIApplication.shared.open(installURL, options: [:], completionHandler: nil)
         }

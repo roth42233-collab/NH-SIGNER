@@ -29,6 +29,15 @@ struct SettingsView: View {
                     }
                 }
 
+                Section(header: Text("Cloudflare HTTPS Tunnel")) {
+                    TextField("https://xxxx.trycloudflare.com", text: $otaServer.tunnelURL)
+                        .autocapitalization(.none)
+                        .disableAutocorrection(true)
+                    Text("Add your Cloudflare HTTPS Tunnel URL to enable direct 1-click on-device [Install] popups on iOS.")
+                        .font(.caption2)
+                        .foregroundColor(.gray)
+                }
+
                 Section(header: Text("Local Installation Server")) {
                     HStack {
                         Text("Status")
