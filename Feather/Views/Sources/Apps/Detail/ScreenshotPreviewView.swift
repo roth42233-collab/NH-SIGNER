@@ -27,11 +27,7 @@ struct ScreenshotPreviewView: View {
 			_imageScrollView()
 				.toolbar {
 					ToolbarItem(placement: .topBarLeading) {
-						if #available(iOS 26.0, *) {
-							Button(role: .close) { dismiss() }
-						} else {
-							Button(.localized("Close"), role: .cancel) { dismiss() }
-						}
+						Button(.localized("Close"), role: .cancel) { dismiss() }
 					}
 					ToolbarItem(placement: .topBarTrailing) {
 						if #available(iOS 26.0, *) {
