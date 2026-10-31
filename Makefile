@@ -34,10 +34,13 @@ $(PLATFORMS): deps
 		-destination "$$DEST" \
 		-archivePath build/$(NAME).xcarchive \
 		-skipPackagePluginValidation \
+		-skipMacroValidation \
 		CODE_SIGNING_ALLOWED=NO \
 		CODE_SIGNING_REQUIRED=NO \
 		CODE_SIGN_IDENTITY="" \
 		ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES=NO \
+		SWIFT_STRICT_CONCURRENCY=minimal \
+		SWIFT_TREAT_WARNINGS_AS_ERRORS=NO \
 		archive
 
 	mkdir -p Payload

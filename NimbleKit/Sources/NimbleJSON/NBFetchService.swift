@@ -47,28 +47,26 @@ extension NBFetchService {
 		from url: URL,
 		completion: @escaping (Result<T, Error>) -> Void
 	) {
-		DispatchQueue.global(qos: .userInitiated).async {
-			let task = URLSession.shared.dataTask(with: url) { data, response, error in
-				if let error = error {
-					completion(.failure(NBFetchServiceError.networkError(error)))
-					return
-				}
-				
-				guard let data = data else {
-					completion(.failure(NBFetchServiceError.noData))
-					return
-				}
-				
-				do {
-					let decoder = JSONDecoder()
-					let decodedData = try decoder.decode(T.self, from: data)
-					completion(.success(decodedData))
-				} catch {
-					completion(.failure(NBFetchServiceError.parsingError(error)))
-				}
+		let task = URLSession.shared.dataTask(with: url) { data, response, error in
+			if let error = error {
+				completion(.failure(NBFetchServiceError.networkError(error)))
+				return
 			}
 			
-			task.resume()
+			guard let data = data else {
+				completion(.failure(NBFetchServiceError.noData))
+				return
+			}
+			
+			do {
+				let decoder = JSONDecoder()
+				let decodedData = try decoder.decode(T.self, from: data)
+				completion(.success(decodedData))
+			} catch {
+				completion(.failure(NBFetchServiceError.parsingError(error)))
+			}
 		}
+		
+		task.resume()
 	}
 }
