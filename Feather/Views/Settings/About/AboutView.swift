@@ -11,22 +11,20 @@ import NimbleJSON
 
 // MARK: - Extension: Model
 extension AboutView {
-	struct CreditsModel: Codable, Hashable {
-		let name: String?
-		let desc: String?
-		let github: String
+	struct CreditsModel: Hashable {
+		let name: String
+		let desc: String
+		let url: String
+		let icon: String
 	}
 }
 
 // MARK: - View
 struct AboutView: View {
 	@State private var _credits: [CreditsModel] = [
-		.init(name: "C", desc: "Developer", github: "claration"),
-		.init(name: "Asami", desc: "Developer", github: "Nyasami"),
-		.init(name: "Lakhan Lothiyi", desc: "AltStore Repositories", github: "llsc12"),
+		.init(name: "NH-Signer Group", desc: "Telegram Community", url: "https://t.me/+6CL4Jef4xx8wNGZl", icon: "paperplane.fill"),
+		.init(name: "SPP NH Tools", desc: "Telegram Channel", url: "https://t.me/sppnhtools", icon: "paperplane.fill"),
 	]
-	
-	let pngURL = URL(string: "https://sponsors.claration.dev/sponsors.png")!
 	
 	// MARK: Body
 	var body: some View {
@@ -35,7 +33,7 @@ struct AboutView: View {
 				VStack {
 					FRAppIconView(size: 72)
 					
-					Text(Bundle.main.exec)
+					Text(Bundle.main.name.isEmpty ? "NH-Signer" : Bundle.main.name)
 						.font(.largeTitle)
 						.bold()
 						.foregroundStyle(Color.accentColor)
@@ -52,40 +50,10 @@ struct AboutView: View {
 			.listRowBackground(EmptyView())
 			
 			NBSection(.localized("Credits")) {
-				ForEach(_credits, id: \.github) { credit in
-					_credit(name: credit.name, desc: credit.desc, github: credit.github)
+				ForEach(_credits, id: \.url) { credit in
+					_credit(name: credit.name, desc: credit.desc, url: credit.url, icon: credit.icon)
 				}
 				.transition(.slide)
-			}
-			
-			NBSection(.localized("Sponsors")) {
-				Text(.localized("💜 This couldn't of been done without my sponsors!"))
-					.foregroundStyle(.secondary)
-					.padding(.vertical, 2)
-				AsyncImage(url: pngURL) { phase in
-					switch phase {
-					case .empty:
-						ProgressView()
-							.frame(maxWidth: .infinity)
-							.frame(height: 120)
-					case .success(let image):
-						image
-							.resizable()
-							.scaledToFit()
-							.frame(maxWidth: .infinity)
-							.listRowInsets(EdgeInsets())
-					case .failure:
-						Image(systemName: "photo")
-							.resizable()
-							.scaledToFit()
-							.frame(maxWidth: .infinity)
-							.foregroundColor(.gray)
-							.frame(height: 120)
-						
-					@unknown default:
-						EmptyView()
-					}
-				}
 			}
 		}
 	}
@@ -95,21 +63,32 @@ struct AboutView: View {
 extension AboutView {
 	@ViewBuilder
 	private func _credit(
-		name: String?,
-		desc: String?,
-		github: String
+		name: String,
+		desc: String,
+		url: String,
+		icon: String
 	) -> some View {
 		Button {
-			UIApplication.open("https://github.com/\(github)")
+			UIApplication.open(url)
 		} label: {
-			HStack {
-				FRIconCellView(
-					title: name ?? github,
-					subtitle: desc ?? "",
-					iconUrl: URL(string: "https://github.com/\(github).png")!,
-					size: 45,
-					isCircle: true
-				)
+			HStack(spacing: 14) {
+				Image(systemName: icon)
+					.font(.system(size: 20, weight: .semibold))
+					.foregroundColor(.white)
+					.frame(width: 40, height: 40)
+					.background(Color.blue)
+					.clipShape(Circle())
+				
+				VStack(alignment: .leading, spacing: 2) {
+					Text(name)
+						.font(.headline)
+						.foregroundStyle(Color.primary)
+					Text(desc)
+						.font(.subheadline)
+						.foregroundStyle(Color.secondary)
+				}
+				
+				Spacer()
 				
 				Image(systemName: "arrow.up.right")
 					.foregroundColor(.secondary.opacity(0.65))

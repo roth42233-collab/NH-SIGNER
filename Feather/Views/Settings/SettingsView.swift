@@ -34,17 +34,13 @@ struct SettingsView: View {
 	}
 
     
-	private let _donationsUrl = "https://github.com/sponsors/claration"
-	private let _githubUrl = "https://github.com/claration/Feather"
+	private let _telegramGroupUrl = "https://t.me/+6CL4Jef4xx8wNGZl"
+	private let _telegramChannelUrl = "https://t.me/sppnhtools"
     
 	// MARK: Body
 	var body: some View {
 		NBNavigationView(.localized("Settings")) {
 			Form {
-				#if !NIGHTLY && !DEBUG
-					SettingsDonationCellView(site: _donationsUrl)
-				#endif
-                
 				_feedback()
                 
 				Section {
@@ -114,14 +110,14 @@ extension SettingsView {
 				}
 			}
             
-			Button(.localized("Submit Feedback"), systemImage: "safari") {
-				UIApplication.open(URL(string: "\(_githubUrl)/issues/new/choose")!)
+			Button("NH-Signer Group", systemImage: "paperplane") {
+				UIApplication.open(_telegramGroupUrl)
 			}
-			Button(.localized("GitHub Repository"), systemImage: "safari") {
-				UIApplication.open(_githubUrl)
+			Button("SPP NH Tools", systemImage: "paperplane") {
+				UIApplication.open(_telegramChannelUrl)
 			}
 		} footer: {
-			Text(.localized("If any issues occur within the app please report it via the GitHub repository. When submitting an issue, make sure to submit detailed information."))
+			Text("Join our Telegram community and channel for updates and support.")
 		}
 	}
     
