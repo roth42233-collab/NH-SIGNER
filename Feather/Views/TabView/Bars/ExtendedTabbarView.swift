@@ -73,6 +73,8 @@ struct ExtendedTabbarView: View {
 		}
 		.tabViewStyle(.sidebarAdaptable)
 		.tabViewCustomization($customization)
+		.toolbarBackground(.visible, for: .tabBar)
+		.toolbarBackground(.ultraThinMaterial, for: .tabBar)
 		.sheet(isPresented: $_isAddingPresenting) {
 			SourcesAddView()
 				.presentationDetents([.medium])

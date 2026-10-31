@@ -21,16 +21,15 @@ struct FeatherApp: App {
 	
 	var body: some Scene {
 		WindowGroup {
-			VStack {
-				DownloadHeaderView(downloadManager: downloadManager)
-					.transition(.move(edge: .top).combined(with: .opacity))
-				VariedTabbarView()
-					.environment(\.managedObjectContext, storage.context)
-					.onOpenURL(perform: _handleURL)
-					.transition(.move(edge: .top).combined(with: .opacity))
-			}
-			.animation(.smooth, value: downloadManager.manualDownloads.description)
-			.onReceive(NotificationCenter.default.publisher(for: .heartbeatInvalidHost)) { _ in
+			VariedTabbarView()
+				.environment(\.managedObjectContext, storage.context)
+				.onOpenURL(perform: _handleURL)
+				.overlay(alignment: .top) {
+					DownloadHeaderView(downloadManager: downloadManager)
+						.transition(.move(edge: .top).combined(with: .opacity))
+				}
+				.animation(.smooth, value: downloadManager.manualDownloads.description)
+				.onReceive(NotificationCenter.default.publisher(for: .heartbeatInvalidHost)) { _ in
 				DispatchQueue.main.async {
 					UIAlertController.showAlertWithOk(
 						title: "InvalidHostID",
@@ -160,11 +159,27 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 			"Feather.serverMethod": 1,
 			"Feather.ipFix": true
 		])
+		_setupBarAppearances()
 		_createPipeline()
 		_createDocumentsDirectories()
 		ResetView.clearWorkCache()
 		_addDefaultCertificates()
 		return true
+	}
+
+	private func _setupBarAppearances() {
+		let navAppearance = UINavigationBarAppearance()
+		navAppearance.configureWithDefaultBackground()
+		navAppearance.backgroundEffect = UIBlurEffect(style: .systemMaterial)
+		UINavigationBar.appearance().standardAppearance = navAppearance
+		UINavigationBar.appearance().compactAppearance = navAppearance
+		UINavigationBar.appearance().scrollEdgeAppearance = navAppearance
+
+		let tabAppearance = UITabBarAppearance()
+		tabAppearance.configureWithDefaultBackground()
+		tabAppearance.backgroundEffect = UIBlurEffect(style: .systemMaterial)
+		UITabBar.appearance().standardAppearance = tabAppearance
+		UITabBar.appearance().scrollEdgeAppearance = tabAppearance
 	}
 	
 	private func _createPipeline() {

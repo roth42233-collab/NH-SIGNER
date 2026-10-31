@@ -18,6 +18,8 @@ struct TabbarView: View {
 						Label(tab.title, systemImage: tab.icon)
 					}
 					.tag(tab)
+					.toolbarBackground(.visible, for: .tabBar)
+					.toolbarBackground(.ultraThinMaterial, for: .tabBar)
 			}
 		}
 	}
