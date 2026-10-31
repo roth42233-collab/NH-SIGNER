@@ -1,62 +1,54 @@
-name: Build NH-Signer iOS IPA
+name: Build NH-Signer IPA
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
   workflow_dispatch:
 
 jobs:
   build:
+    name: Build NH-Signer iOS IPA
     runs-on: macos-14
     permissions:
       contents: write
 
     steps:
-      - name: Checkout Repository
+      - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+          fetch-depth: 0
 
-      - name: Select Xcode 15 / 16
+      - name: Setup Xcode 16
         run: |
-          sudo xcode-select -s /Applications/Xcode_15.4.app || sudo xcode-select -s /Applications/Xcode_16.0.app || true
+          sudo xcode-select -s /Applications/Xcode_16.0.app || \
+          sudo xcode-select -s /Applications/Xcode_16.1.app || \
+          sudo xcode-select -s /Applications/Xcode_16.app || \
+          sudo xcode-select -s /Applications/Xcode_16.2.app || true
           xcodebuild -version
 
-      - name: Build and Archive NH-Signer
+      - name: Resolve SPM Dependencies
         run: |
-          xcodebuild \
-            -project NH-Signer.xcodeproj \
-            -scheme NH-Signer \
-            -configuration Release \
-            -destination "generic/platform=iOS" \
-            -archivePath build/NH-Signer.xcarchive \
-            CODE_SIGNING_ALLOWED=NO \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGN_IDENTITY="" \
-            archive
+          xcodebuild -workspace Feather.xcworkspace -scheme Feather -resolvePackageDependencies || true
 
-      - name: Package IPA
+      - name: Build IPA via Makefile
         run: |
-          mkdir -p Payload
-          cp -R build/NH-Signer.xcarchive/Products/Applications/NH-Signer.app Payload/
-          zip -r NH-Signer.ipa Payload
-          ls -la NH-Signer.ipa
+          make
 
-      - name: Upload Artifact
+      - name: Upload NH-Signer IPA
         uses: actions/upload-artifact@v4
         with:
           name: NH-Signer-IPA
-          path: NH-Signer.ipa
+          path: packages/NH-Signer.ipa
           if-no-files-found: error
 
-      - name: Create GitHub Release
+      - name: Create Release
         if: startsWith(github.ref, 'refs/heads/main')
         run: |
-          gh release create "v1.0.0-${{ github.run_number }}" NH-Signer.ipa \
-            --title "NH-Signer iOS v1.0.0 (Build ${{ github.run_number }})" \
-            --notes "## NH-Signer iOS Sideloading App
-          - Pure native Swift implementation
-          - Zero external dependencies
-          - Local OTA itms-services installation server
-          - P12 & Mobileprovision certificate manager
-          - Custom app bundle ID, display name, and versioning"
+          gh release create "v1.0.0-${{ github.run_number }}" packages/NH-Signer.ipa \
+            --title "NH-Signer v1.0.0 (Build ${{ github.run_number }})" \
+            --notes "Full Feather-based on-device sideloading and signing application" || true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
