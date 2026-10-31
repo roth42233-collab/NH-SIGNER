@@ -10,7 +10,7 @@ on:
 jobs:
   build:
     name: Build NH-Signer iOS IPA
-    runs-on: macos-14
+    runs-on: macos-15
     permissions:
       contents: write
 
@@ -36,6 +36,9 @@ jobs:
             fi
           done
           xcodebuild -version
+          xcrun simctl list >/dev/null 2>&1 || true
+          sudo xcodebuild -runFirstLaunch || true
+          sudo xcodebuild -downloadPlatform iOS || true
 
       - name: Resolve SPM Dependencies
         run: |
