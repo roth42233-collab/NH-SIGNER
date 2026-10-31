@@ -48,8 +48,8 @@ extension ServerView {
 
 // MARK: - View
 struct ServerView: View {
-	@AppStorage("Feather.ipFix") private var _ipFix: Bool = false
-	@AppStorage("Feather.serverMethod") private var _serverMethod: Int = 0
+	@AppStorage("Feather.ipFix") private var _ipFix: Bool = true
+	@AppStorage("Feather.serverMethod") private var _serverMethod: Int = 1
 	private let _serverMethods: [String] = [.localized("Fully Local"), .localized("Semi Local")]
 	
 	private let _dataService = NBFetchService()
@@ -66,6 +66,11 @@ struct ServerView: View {
 				}
 				Toggle(.localized("Only use localhost address"), systemImage: "lifepreserver", isOn: $_ipFix)
 					.disabled(_serverMethod != 1)
+			}
+			.onChange(of: _serverMethod) { newValue in
+				if newValue == 1 {
+					_ipFix = true
+				}
 			}
 			
 			Section {

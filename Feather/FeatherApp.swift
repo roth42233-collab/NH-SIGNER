@@ -156,6 +156,10 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 		_ application: UIApplication,
 		didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
 	) -> Bool {
+		UserDefaults.standard.register(defaults: [
+			"Feather.serverMethod": 1,
+			"Feather.ipFix": true
+		])
 		_createPipeline()
 		_createDocumentsDirectories()
 		ResetView.clearWorkCache()
