@@ -8,12 +8,10 @@
 import SwiftUI
 
 struct VariedTabbarView: View {
-	@Environment(\.horizontalSizeClass) private var horizontalSizeClass
-	
 	init() {}
 	
 	var body: some View {
-		if #available(iOS 18, *), horizontalSizeClass == .regular {
+		if #available(iOS 18, *) {
 			ExtendedTabbarView()
 		} else {
 			TabbarView()

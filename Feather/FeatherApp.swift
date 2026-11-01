@@ -159,27 +159,12 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 			"Feather.serverMethod": 1,
 			"Feather.ipFix": true
 		])
-		_setupBarAppearances()
 		_createPipeline()
 		_createDocumentsDirectories()
 		ResetView.clearWorkCache()
 		_addDefaultCertificates()
+		_addDefaultSources()
 		return true
-	}
-
-	private func _setupBarAppearances() {
-		let navAppearance = UINavigationBarAppearance()
-		navAppearance.configureWithDefaultBackground()
-		navAppearance.backgroundEffect = UIBlurEffect(style: .systemMaterial)
-		UINavigationBar.appearance().standardAppearance = navAppearance
-		UINavigationBar.appearance().compactAppearance = navAppearance
-		UINavigationBar.appearance().scrollEdgeAppearance = navAppearance
-
-		let tabAppearance = UITabBarAppearance()
-		tabAppearance.configureWithDefaultBackground()
-		tabAppearance.backgroundEffect = UIBlurEffect(style: .systemMaterial)
-		UITabBar.appearance().standardAppearance = tabAppearance
-		UITabBar.appearance().scrollEdgeAppearance = tabAppearance
 	}
 	
 	private func _createPipeline() {
@@ -268,6 +253,15 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 			UserDefaults.standard.set(true, forKey: "feather.didImportDefaultCertificates")
 		} catch {
 			Logger.misc.error("Failed to list signing-assets: \(error)")
+		}
+	}
+
+	private func _addDefaultSources() {
+		let defaultRepoKey = "nhsigner.didAddDefaultSources_v1"
+		guard !UserDefaults.standard.bool(forKey: defaultRepoKey) else { return }
+		let repoUrl = "https://server-key-3105-production-63bf.up.railway.app/app-repo.json"
+		FR.handleSource(repoUrl) {
+			UserDefaults.standard.set(true, forKey: defaultRepoKey)
 		}
 	}
 

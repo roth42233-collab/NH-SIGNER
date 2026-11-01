@@ -27,8 +27,6 @@ public struct NBNavigationView<Content>: View where Content: View {
 			_content
 				.navigationTitle(_title)
 				.navigationBarTitleDisplayMode(_mode)
-				.toolbarBackground(.visible, for: .navigationBar)
-				.toolbarBackground(.ultraThinMaterial, for: .navigationBar)
 		}
 	}
 }

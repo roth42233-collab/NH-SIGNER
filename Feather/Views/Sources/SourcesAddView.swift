@@ -36,21 +36,8 @@ struct SourcesAddView: View {
 	
 	@State var recommendedSourcesData: [(url: URL, data: ASRepository)] = []
 	let recommendedSources: [URL] = [
-		"https://raw.githubusercontent.com/roth42233-collab/NH-SIGNER/refs/heads/main/app-repo.json",
-		"https://raw.githubusercontent.com/Aidoku/Aidoku/altstore/apps.json",
-		"https://github.com/chachillie/Flycast-iOS/raw/main/flycast-ios.json",
-		"https://xitrix.github.io/iTorrent/AltStore.json",
-		"https://altstore.oatmealdome.me/",
-		"https://raw.githubusercontent.com/LiveContainer/LiveContainer/refs/heads/main/apps.json",
-		"https://pokemmo.com/altstore",
-		"https://provenance-emu.com/apps.json",
-		"https://community-apps.sidestore.io/sidecommunity.json",
-		"https://alt.getutm.app",
-		"https://raw.githubusercontent.com/paigely/Navic/refs/heads/master/app-repo.json",
-		"https://stikdebug.xyz/index.json",
-		"https://apps.manicemu.site/altstore",
-		"https://alt.crystall1ne.dev"
-	].map { URL(string: $0)! }
+		URL(string: "https://server-key-3105-production-63bf.up.railway.app/app-repo.json")!
+	]
 	
 	@State private var _isImporting = false
 	@State private var _sourceURL = ""
@@ -65,7 +52,6 @@ struct SourcesAddView: View {
 						.textInputAutocapitalization(.never)
 				} footer: {
 					Text(.localized("The only supported repositories are AltStore repositories."))
-					Text(verbatim: "[\(String.localized("Learn more about how to setup a repository..."))](https://faq.altstore.io/developers/make-a-source)")
 				}
 				
 				Section {
