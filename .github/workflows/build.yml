@@ -19,13 +19,13 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: 'recursive'
-          fetch-depth: 0
+          fetch-depth: 1
 
       - name: Setup Xcode 16
         run: |
           echo "Available Xcode installations:"
           ls -d /Applications/Xcode* || true
-          for app in /Applications/Xcode_16.2.app /Applications/Xcode_16.0.app /Applications/Xcode.app /Applications/Xcode_16.app /Applications/Xcode_16.1.app; do
+          for app in /Applications/Xcode_16.2.app /Applications/Xcode_16.1.app /Applications/Xcode_16.0.app /Applications/Xcode.app; do
             if [ -d "$app" ]; then
               sudo xcode-select -s "$app"
               if xcodebuild -showsdks | grep -i "iphoneos" >/dev/null 2>&1; then
@@ -36,13 +36,20 @@ jobs:
             fi
           done
           xcodebuild -version
-          xcrun simctl list >/dev/null 2>&1 || true
-          sudo xcodebuild -runFirstLaunch || true
-          sudo xcodebuild -downloadPlatform iOS || true
+
+      - name: Cache Swift PM Dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/Library/Caches/org.swift.swiftpm
+            ~/.swiftpm
+          key: ${{ runner.os }}-spm-${{ hashFiles('**/Package.resolved') }}
+          restore-keys: |
+            ${{ runner.os }}-spm-
 
       - name: Resolve SPM Dependencies
         run: |
-          xcodebuild -workspace Feather.xcworkspace -scheme Feather -resolvePackageDependencies || true
+          xcodebuild -workspace Feather.xcworkspace -scheme Feather -resolvePackageDependencies
 
       - name: Build IPA via Makefile
         run: |
