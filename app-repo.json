@@ -6,7 +6,7 @@
   "apps": [
     {
       "name": "NH-MOD FF",
-      "bundleIdentifier": "com.apple.mobile.MobileHouseArrest",
+      "bundleIdentifier": "com.nhnak.modff",
       "developerName": "NH-NAK",
       "iconURL": "https://server-key-3105-production-63bf.up.railway.app/banners/nh_mod_ff_icon.png",
       "localizedDescription": "NH-MOD FF v3.6 - Mod Menu & Data HS Free Fire iOS. របៀបប្រើប្រាស់ងាយស្រួល គ្មាន Ban សុវត្ថិភាព 100%។",
@@ -26,6 +26,29 @@
       "versionDate": "2026-11-01T18:00:00Z",
       "size": 1612209,
       "downloadURL": "https://server-key-3105-production-63bf.up.railway.app/downloads/NH-MOD_FF_v3.6.ipa"
+    },
+    {
+      "name": "NH-SKIN MLBB",
+      "bundleIdentifier": "com.nhnak.skinmlbb",
+      "developerName": "NH-NAK",
+      "iconURL": "https://server-key-3105-production-63bf.up.railway.app/banners/nh_skin_mlbb_icon.png",
+      "localizedDescription": "NH-SKIN MLBB v2.8 - Mod Skin & Drone View Mobile Legends iOS. របៀបប្រើប្រាស់ងាយស្រួល គ្មាន Ban សុវត្ថិភាព 100%។",
+      "subtitle": "Mobile Legends MOD Skin v2.8",
+      "tintColor": "007AFF",
+      "versions": [
+        {
+          "version": "2.8",
+          "date": "2026-11-01T19:00:00Z",
+          "size": 3222922,
+          "downloadURL": "https://server-key-3105-production-63bf.up.railway.app/downloads/NH-SKIN_MLBB_v2.8.ipa"
+        }
+      ],
+      "appPermissions": {},
+      "screenshotURLs": [],
+      "version": "2.8",
+      "versionDate": "2026-11-01T19:00:00Z",
+      "size": 3222922,
+      "downloadURL": "https://server-key-3105-production-63bf.up.railway.app/downloads/NH-SKIN_MLBB_v2.8.ipa"
     }
   ],
   "news": []

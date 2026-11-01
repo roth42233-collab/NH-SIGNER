@@ -36,6 +36,8 @@ jobs:
             fi
           done
           xcodebuild -version
+          sudo xcodebuild -runFirstLaunch || true
+          sudo xcodebuild -downloadPlatform iOS || true
 
       - name: Cache Swift PM Dependencies
         uses: actions/cache@v4
@@ -49,7 +51,7 @@ jobs:
 
       - name: Resolve SPM Dependencies
         run: |
-          xcodebuild -workspace Feather.xcworkspace -scheme Feather -resolvePackageDependencies
+          xcodebuild -workspace Feather.xcworkspace -scheme Feather -resolvePackageDependencies || true
 
       - name: Build IPA via Makefile
         run: |
