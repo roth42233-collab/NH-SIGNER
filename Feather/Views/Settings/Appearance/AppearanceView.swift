@@ -31,6 +31,9 @@ struct AppearanceView: View {
 	@AppStorage("Feather.userTintColor")
 	private var _selectedColorHex: String = "#848ef9"
 	
+	@AppStorage("com.apple.SwiftUI.IgnoreSolariumLinkedOnCheck")
+	private var _ignoreSolariumLinkedOnCheck: Bool = true
+	
 	private var _tintColorBinding: Binding<Color> {
 		Binding(
 			get: { Color(hex: _selectedColorHex) },
@@ -65,6 +68,10 @@ struct AppearanceView: View {
 			}
 			
 			if #available(iOS 18.0, *) {
+				NBSection(.localized("Appearance")) {
+					Toggle(.localized("Floating Tab Bar (Liquid Glass)"), isOn: $_ignoreSolariumLinkedOnCheck)
+				}
+				
 				NBSection(.localized("Library")) {
 					Toggle(.localized("Dynamic Icons"), isOn: $_shouldChangeIconsBasedOffStyle)
 					if #available(iOS 18.2, *) {

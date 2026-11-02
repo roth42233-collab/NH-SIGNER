@@ -157,14 +157,32 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 	) -> Bool {
 		UserDefaults.standard.register(defaults: [
 			"Feather.serverMethod": 1,
-			"Feather.ipFix": true
+			"Feather.ipFix": true,
+			"com.apple.SwiftUI.IgnoreSolariumLinkedOnCheck": true
 		])
+		UserDefaults.standard.set(true, forKey: "com.apple.SwiftUI.IgnoreSolariumLinkedOnCheck")
+		_setupBarAppearances()
 		_createPipeline()
 		_createDocumentsDirectories()
 		ResetView.clearWorkCache()
 		_addDefaultCertificates()
 		_addDefaultSources()
 		return true
+	}
+
+	private func _setupBarAppearances() {
+		let navAppearance = UINavigationBarAppearance()
+		navAppearance.configureWithTransparentBackground()
+		navAppearance.shadowColor = .clear
+		UINavigationBar.appearance().standardAppearance = navAppearance
+		UINavigationBar.appearance().compactAppearance = navAppearance
+		UINavigationBar.appearance().scrollEdgeAppearance = navAppearance
+
+		let tabAppearance = UITabBarAppearance()
+		tabAppearance.configureWithTransparentBackground()
+		tabAppearance.shadowColor = .clear
+		UITabBar.appearance().standardAppearance = tabAppearance
+		UITabBar.appearance().scrollEdgeAppearance = tabAppearance
 	}
 	
 	private func _createPipeline() {
