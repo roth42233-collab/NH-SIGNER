@@ -87,26 +87,6 @@ struct SourceAppsView: View {
 					Button(.localized("Visit Patreon"), systemImage: "dollarsign.circle") {
 						UIApplication.open(url)
 					}
-				}
-			}
-			
-			Divider()
-			
-			Button(.localized("Copy"), systemImage: "doc.on.doc") {
-				guard !object.isEmpty else {
-					UIAlertController.showAlertWithOk(
-						title: .localized("Error"),
-						message: .localized("No sources to copy")
-					)
-					return
-				}
-				UIPasteboard.general.string = object.map {
-					$0.sourceURL!.absoluteString
-				}.joined(separator: "\n")
-				UIAlertController.showAlertWithOk(
-					title: .localized("Success"),
-					message: .localized("Sources copied to clipboard")
-				)
 			}
 		}
 		.toolbar {

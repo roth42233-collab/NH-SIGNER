@@ -218,3 +218,4 @@ final class IPAIconExtractor: @unchecked Sendable {
 		return UIImage(data: rawData)
 	}
 }
+
