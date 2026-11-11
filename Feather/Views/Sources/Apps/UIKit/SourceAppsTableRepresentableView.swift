@@ -37,7 +37,7 @@ struct SourceAppsTableRepresentableView: UIViewRepresentable {
 		{
 			let header = UIHostingController(rootView: SourceNewsView(news: news))
 			header.view.translatesAutoresizingMaskIntoConstraints = true
-			header.view.backgroundColor = .clear
+			header.view.backgroundColor = UIColor.clear
 			let fixedHeight: CGFloat = 161
 			let width = tableView.bounds.width
 			header.view.frame = CGRect(origin: .zero, size: CGSize(width: width, height: fixedHeight))

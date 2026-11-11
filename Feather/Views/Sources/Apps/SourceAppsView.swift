@@ -87,6 +87,7 @@ struct SourceAppsView: View {
 					Button(.localized("Visit Patreon"), systemImage: "dollarsign.circle") {
 						UIApplication.open(url)
 					}
+				}
 			}
 		}
 		.toolbar {
