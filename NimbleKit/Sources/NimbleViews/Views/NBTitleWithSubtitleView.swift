@@ -23,9 +23,11 @@ public struct NBTitleWithSubtitleView: View {
 			Text(_title)
 				.font(.headline)
 				.foregroundColor(.primary)
-			Text(_subtitle)
-				.font(.subheadline)
-				.foregroundColor(.secondary)
+			if !_subtitle.isEmpty {
+				Text(_subtitle)
+					.font(.subheadline)
+					.foregroundColor(.secondary)
+			}
 		}
 		.padding(.vertical, 2)
 		.lineLimit(_linelimit)
