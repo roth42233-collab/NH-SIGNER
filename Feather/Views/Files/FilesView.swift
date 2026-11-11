@@ -76,11 +76,8 @@ struct FilesView: View {
 	}
 	
 	var body: some View {
-		NBNavigationView(currentTitle) {
+		NBNavigationView("", displayMode: .inline) {
 			VStack(spacing: 0) {
-				// Scope Filter Header
-				_scopeFilterBar()
-				
 				// File List
 				List {
 					if !directoryStack.isEmpty {

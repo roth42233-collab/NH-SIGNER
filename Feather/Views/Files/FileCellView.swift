@@ -7,6 +7,8 @@
 
 import SwiftUI
 import NimbleViews
+import UIKit
+import ImageIO
 
 struct FileCellView: View {
 	let item: FileItem
@@ -24,9 +26,11 @@ struct FileCellView: View {
 			onSelect(item)
 		} label: {
 			HStack(spacing: 12) {
-				// Icon (Real App Icon for IPAs like LCSign, or system icon)
+				// Icon (Real App Icon for IPAs, thumbnail for images, or system icon)
 				if item.isIPA {
 					FileIPAIconView(url: item.url, systemIcon: item.systemIcon, iconColor: item.iconColor)
+				} else if item.isImage {
+					FileImageThumbnailView(url: item.url, systemIcon: item.systemIcon, iconColor: item.iconColor)
 				} else {
 					ZStack {
 						RoundedRectangle(cornerRadius: 10, style: .continuous)
@@ -203,6 +207,97 @@ struct FileIPAIconView: View {
 			}
 			if let extracted = await IPAIconExtractor.shared.extractIcon(from: url) {
 				self.icon = extracted
+			}
+		}
+	}
+}
+
+// MARK: - Image Thumbnail Cache & View
+final class ImageThumbnailCache: @unchecked Sendable {
+	static let shared = ImageThumbnailCache()
+	private let memoryCache = NSCache<NSURL, UIImage>()
+	
+	init() {
+		memoryCache.countLimit = 300
+		memoryCache.totalCostLimit = 60 * 1024 * 1024 // 60 MB
+	}
+	
+	func thumbnail(for url: URL) -> UIImage? {
+		return memoryCache.object(forKey: url as NSURL)
+	}
+	
+	func loadThumbnail(for url: URL, targetSize: CGSize = CGSize(width: 84, height: 84)) async -> UIImage? {
+		if let mem = memoryCache.object(forKey: url as NSURL) {
+			return mem
+		}
+		
+		return await Task.detached(priority: .userInitiated) { [weak self] () -> UIImage? in
+			guard let self = self else { return nil }
+			
+			// Downsample using ImageIO directly from disk to keep memory low
+			if let source = CGImageSourceCreateWithURL(url as CFURL, nil) {
+				let maxPixel = max(targetSize.width, targetSize.height) * 2
+				let options: [CFString: Any] = [
+					kCGImageSourceCreateThumbnailFromImageAlways: true,
+					kCGImageSourceShouldCacheImmediately: true,
+					kCGImageSourceCreateThumbnailWithTransform: true,
+					kCGImageSourceThumbnailMaxPixelSize: maxPixel
+				]
+				if let cgImage = CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary) {
+					let thumb = UIImage(cgImage: cgImage)
+					self.memoryCache.setObject(thumb, forKey: url as NSURL)
+					return thumb
+				}
+			}
+			
+			// Fallback to UIImage(contentsOfFile:) for Apple CgBI-compressed PNGs
+			if let img = UIImage(contentsOfFile: url.path) {
+				self.memoryCache.setObject(img, forKey: url as NSURL)
+				return img
+			}
+			return nil
+		}.value
+	}
+}
+
+struct FileImageThumbnailView: View {
+	let url: URL
+	let systemIcon: String
+	let iconColor: Color
+	
+	@State private var thumbnail: UIImage? = nil
+	
+	var body: some View {
+		Group {
+			if let thumbnail = thumbnail {
+				Image(uiImage: thumbnail)
+					.resizable()
+					.aspectRatio(contentMode: .fill)
+					.frame(width: 42, height: 42)
+					.clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+					.overlay(
+						RoundedRectangle(cornerRadius: 10, style: .continuous)
+							.strokeBorder(Color.primary.opacity(0.12), lineWidth: 0.5)
+					)
+			} else {
+				ZStack {
+					RoundedRectangle(cornerRadius: 10, style: .continuous)
+						.fill(iconColor.opacity(0.15))
+						.frame(width: 42, height: 42)
+					
+					Image(systemName: systemIcon)
+						.font(.system(size: 20, weight: .semibold))
+						.foregroundColor(iconColor)
+				}
+			}
+		}
+		.task(id: url) {
+			if let cached = ImageThumbnailCache.shared.thumbnail(for: url) {
+				self.thumbnail = cached
+				return
+			}
+			if let loaded = await ImageThumbnailCache.shared.loadThumbnail(for: url) {
+				self.thumbnail = loaded
 			}
 		}
 	}
