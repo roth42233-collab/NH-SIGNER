@@ -24,15 +24,19 @@ struct FileCellView: View {
 			onSelect(item)
 		} label: {
 			HStack(spacing: 12) {
-				// Icon
-				ZStack {
-					RoundedRectangle(cornerRadius: 10, style: .continuous)
-						.fill(item.iconColor.opacity(0.15))
-						.frame(width: 42, height: 42)
-					
-					Image(systemName: item.systemIcon)
-						.font(.system(size: 20, weight: .semibold))
-						.foregroundColor(item.iconColor)
+				// Icon (Real App Icon for IPAs like LCSign, or system icon)
+				if item.isIPA {
+					FileIPAIconView(url: item.url, systemIcon: item.systemIcon, iconColor: item.iconColor)
+				} else {
+					ZStack {
+						RoundedRectangle(cornerRadius: 10, style: .continuous)
+							.fill(item.iconColor.opacity(0.15))
+							.frame(width: 42, height: 42)
+						
+						Image(systemName: item.systemIcon)
+							.font(.system(size: 20, weight: .semibold))
+							.foregroundColor(item.iconColor)
+					}
 				}
 				
 				// File Details
@@ -167,3 +171,39 @@ struct FileCellView: View {
 	}
 }
 
+// MARK: - IPA App Icon View with Caching
+struct FileIPAIconView: View {
+	let url: URL
+	let systemIcon: String
+	let iconColor: Color
+	
+	@State private var icon: UIImage? = nil
+	
+	var body: some View {
+		Group {
+			if let icon = icon {
+				Image(uiImage: icon)
+					.appIconStyle(size: 42)
+			} else {
+				ZStack {
+					RoundedRectangle(cornerRadius: 10, style: .continuous)
+						.fill(iconColor.opacity(0.15))
+						.frame(width: 42, height: 42)
+					
+					Image(systemName: systemIcon)
+						.font(.system(size: 20, weight: .semibold))
+						.foregroundColor(iconColor)
+				}
+			}
+		}
+		.task(id: url) {
+			if let cached = IPAIconExtractor.shared.cachedImage(for: url) {
+				self.icon = cached
+				return
+			}
+			if let extracted = await IPAIconExtractor.shared.extractIcon(from: url) {
+				self.icon = extracted
+			}
+		}
+	}
+}
