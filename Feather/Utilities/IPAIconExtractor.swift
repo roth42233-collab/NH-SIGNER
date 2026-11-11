@@ -17,23 +17,22 @@ private func decompressRawDeflate(data: Data, uncompressedSize: Int) -> Data? {
 	guard status == Z_OK else { return nil }
 	defer { inflateEnd(&stream) }
 	
-	var outputData = Data(count: uncompressedSize)
+	let destination = UnsafeMutablePointer<Bytef>.allocate(capacity: uncompressedSize)
+	defer { destination.deallocate() }
+	
 	let decompressed: Data? = data.withUnsafeBytes { (inputBuffer: UnsafeRawBufferPointer) -> Data? in
 		guard let inputPtr = inputBuffer.baseAddress?.assumingMemoryBound(to: Bytef.self) else { return nil }
-		return outputData.withUnsafeMutableBytes { (outputBuffer: UnsafeMutableRawBufferPointer) -> Data? in
-			guard let outputPtr = outputBuffer.baseAddress?.assumingMemoryBound(to: Bytef.self) else { return nil }
-			stream.next_in = UnsafeMutablePointer(mutating: inputPtr)
-			stream.avail_in = uInt(data.count)
-			stream.next_out = outputPtr
-			stream.avail_out = uInt(uncompressedSize)
-			
-			let res = inflate(&stream, Z_FINISH)
-			if res == Z_STREAM_END || res == Z_OK {
-				let bytesWritten = uncompressedSize - Int(stream.avail_out)
-				return outputData.prefix(bytesWritten)
-			}
-			return nil
+		stream.next_in = UnsafeMutablePointer(mutating: inputPtr)
+		stream.avail_in = uInt(data.count)
+		stream.next_out = destination
+		stream.avail_out = uInt(uncompressedSize)
+		
+		let res = inflate(&stream, Z_FINISH)
+		if res == Z_STREAM_END || res == Z_OK {
+			let bytesWritten = uncompressedSize - Int(stream.avail_out)
+			return Data(bytes: destination, count: bytesWritten)
 		}
+		return nil
 	}
 	return decompressed
 }
