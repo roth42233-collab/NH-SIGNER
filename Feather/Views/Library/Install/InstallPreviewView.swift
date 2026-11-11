@@ -553,7 +553,7 @@ extension InstallPreviewView {
 		let cert = Storage.shared.getCertificate(from: app)
 		let provisionData = cert != nil ? Storage.shared.getProvisionFileDecoded(for: cert!) : nil
 		let certName = cert?.nickname ?? provisionData?.Name ?? "iPhone Distribution: Self-Signed / Ad-Hoc"
-		let teamId = provisionData?.TeamIdentifier?.first ?? provisionData?.TeamName ?? "NH-SIGNER"
+		let teamId = provisionData?.TeamIdentifier.first ?? provisionData?.TeamName ?? "NH-SIGNER"
 		
 		appendLog(tag: "System", message: "Version \(version)")
 		appendLog(tag: "System", message: "Certificate \(certName)")
@@ -614,7 +614,8 @@ extension InstallPreviewView {
 						}
 					}
 				} else {
-					let package = try await handler.moveToArchive(packageUrl, shouldOpen: !_useShareSheet)
+					let useShareSheet = await _useShareSheet
+					let package = try await handler.moveToArchive(packageUrl, shouldOpen: !useShareSheet)
 					await MainActor.run {
 						isDone = true
 						_stopTimer()
@@ -622,7 +623,7 @@ extension InstallPreviewView {
 							self.packageUrl = package
 						}
 						self.appendLog(tag: "Signer", message: "Moved to Archives: \(package?.lastPathComponent ?? "ipa")")
-						if await _useShareSheet, let package {
+						if useShareSheet, let package {
 							UIActivityViewController.show(activityItems: [package])
 						}
 					}
