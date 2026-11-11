@@ -50,8 +50,14 @@ final class ArchiveHandler: NSObject {
 				throw SigningFileHandlerError.appNotFound
 			}
 			
-			let zipUrl = self._uniqueWorkDir.appendingPathComponent("Archive.zip")
-			let ipaUrl = self._uniqueWorkDir.appendingPathComponent("Archive.ipa")
+			let rawName = self._app.name ?? "App"
+			let safeName = rawName.components(separatedBy: CharacterSet(charactersIn: "/\\:?*\"<>|")).joined(separator: "_")
+			let rawVer = self._app.version ?? "1.0"
+			let safeVer = rawVer.components(separatedBy: CharacterSet(charactersIn: "/\\:?*\"<>|")).joined(separator: "_")
+			let baseFilename = "\(safeName)_\(safeVer)_signed"
+			
+			let zipUrl = self._uniqueWorkDir.appendingPathComponent("\(baseFilename).zip")
+			let ipaUrl = self._uniqueWorkDir.appendingPathComponent("\(baseFilename).ipa")
 			
 			try await Zip.zipFiles(
 				paths: [payloadUrl],

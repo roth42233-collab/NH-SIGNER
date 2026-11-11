@@ -66,7 +66,7 @@ struct InstallPreviewView: View {
 	
 	@State var isSharing: Bool
 	
-	// Terminal & LCSign States
+	// Terminal & Real Log States
 	@State private var logs: [LogEntry] = []
 	@State private var isDone: Bool = false
 	@State private var showCompleteDialog: Bool = false
@@ -74,6 +74,8 @@ struct InstallPreviewView: View {
 	@State private var elapsedSeconds: Int = 0
 	@State private var timer: Timer? = nil
 	@State private var packageUrl: URL? = nil
+	@State private var lastLoggedPackageMilestone: Int = 0
+	@State private var lastLoggedInstallMilestone: Int = 0
 	
 	init(app: AppInfoPresentable, isSharing: Bool = false) {
 		self.app = app
@@ -125,6 +127,12 @@ struct InstallPreviewView: View {
 		}
 		.onReceive(viewModel.$status) { newStatus in
 			_handleStatusChange(newStatus)
+		}
+		.onReceive(viewModel.$packageProgress) { progress in
+			_handlePackageProgress(progress)
+		}
+		.onReceive(viewModel.$installProgress) { progress in
+			_handleInstallProgress(progress)
 		}
 		.onAppear(perform: _install)
 		#if !targetEnvironment(macCatalyst)
@@ -416,7 +424,8 @@ extension InstallPreviewView {
 			return filename
 		}
 		let name = app.name ?? "app"
-		return "\(name)...signed.ipa"
+		let ver = app.version ?? "1.0"
+		return "\(name)_\(ver)_signed.ipa"
 	}
 	
 	private func _sharePackage() {
@@ -475,6 +484,43 @@ extension InstallPreviewView {
 		logs.append(entry)
 	}
 	
+	private func _handlePackageProgress(_ progress: Double) {
+		let p = Int(progress * 100)
+		if p >= 20 && lastLoggedPackageMilestone < 20 {
+			lastLoggedPackageMilestone = 20
+			appendLog(tag: "Packager", message: "Compressing Payload: 20%...")
+		} else if p >= 40 && lastLoggedPackageMilestone < 40 {
+			lastLoggedPackageMilestone = 40
+			appendLog(tag: "Packager", message: "Compressing Payload: 40%...")
+		} else if p >= 60 && lastLoggedPackageMilestone < 60 {
+			lastLoggedPackageMilestone = 60
+			appendLog(tag: "Packager", message: "Compressing Payload: 60%...")
+		} else if p >= 80 && lastLoggedPackageMilestone < 80 {
+			lastLoggedPackageMilestone = 80
+			appendLog(tag: "Packager", message: "Compressing Payload: 80%...")
+		} else if p >= 100 && lastLoggedPackageMilestone < 100 {
+			lastLoggedPackageMilestone = 100
+			appendLog(tag: "Packager", message: "Compressing Payload: 100% complete")
+		}
+	}
+	
+	private func _handleInstallProgress(_ progress: Double) {
+		let p = Int(progress * 100)
+		if p >= 15 && lastLoggedInstallMilestone < 15 {
+			lastLoggedInstallMilestone = 15
+			appendLog(tag: "Installer", message: "Installing on SpringBoard: 15%...")
+		} else if p >= 35 && lastLoggedInstallMilestone < 35 {
+			lastLoggedInstallMilestone = 35
+			appendLog(tag: "Installer", message: "Installing on SpringBoard: 35%...")
+		} else if p >= 60 && lastLoggedInstallMilestone < 60 {
+			lastLoggedInstallMilestone = 60
+			appendLog(tag: "Installer", message: "Installing on SpringBoard: 60%...")
+		} else if p >= 85 && lastLoggedInstallMilestone < 85 {
+			lastLoggedInstallMilestone = 85
+			appendLog(tag: "Installer", message: "Installing on SpringBoard: 85%...")
+		}
+	}
+	
 	private func _triggerInstall() {
 		let generator = UIImpactFeedbackGenerator(style: .light)
 		generator.impactOccurred()
@@ -502,14 +548,14 @@ extension InstallPreviewView {
 	private func _handleStatusChange(_ newStatus: InstallerStatusViewModel.InstallerStatus) {
 		switch newStatus {
 		case .sendingManifest:
-			appendLog(tag: "Server", message: "Sending manifest to device...")
+			appendLog(tag: "Server", message: "Device requested manifest (itms-services)")
 		case .sendingPayload:
-			appendLog(tag: "Server", message: "Streaming IPA payload...")
+			appendLog(tag: "Server", message: "Streaming signed IPA payload to device...")
 			if _serverMethod == 1 {
 				_isWebviewPresenting = false
 			}
 		case .installing:
-			appendLog(tag: "Server", message: "Installing application to SpringBoard...")
+			appendLog(tag: "Installer", message: "Installing application to SpringBoard...")
 			if progressTask == nil {
 				progressTask = startInstallProgressPolling(
 					bundleID: app.identifier!,
@@ -517,7 +563,9 @@ extension InstallPreviewView {
 				)
 			}
 		case .completed:
-			appendLog(tag: "Server", message: "Installation completed successfully! (100%)")
+			appendLog(tag: "Installer", message: "Application installed successfully! (100%)")
+			isDone = true
+			_stopTimer()
 			progressTask?.cancel()
 			progressTask = nil
 			#if !targetEnvironment(macCatalyst)
@@ -525,6 +573,7 @@ extension InstallPreviewView {
 			#endif
 		case .broken(let error):
 			appendLog(level: .error, tag: "Server", message: "Installation error: \(error.localizedDescription)")
+			_stopTimer()
 			progressTask?.cancel()
 			progressTask = nil
 			#if !targetEnvironment(macCatalyst)
@@ -553,28 +602,20 @@ extension InstallPreviewView {
 		let cert = Storage.shared.getCertificate(from: app)
 		let provisionData = cert != nil ? Storage.shared.getProvisionFileDecoded(for: cert!) : nil
 		let certName = cert?.nickname ?? provisionData?.Name ?? "iPhone Distribution: Self-Signed / Ad-Hoc"
-		let teamId = provisionData?.TeamIdentifier.first ?? provisionData?.TeamName ?? "NH-SIGNER"
 		
-		appendLog(tag: "System", message: "Version \(version)")
-		appendLog(tag: "System", message: "Certificate \(certName)")
-		appendLog(tag: "System", message: "Identifier \(identifier)")
-		
-		appendLog(tag: "Injector", message: "Snapshot \(name).app ready (0.4s)")
-		appendLog(tag: "Injector", message: "Inject Plugins processed (0.0s)")
-		appendLog(tag: "Injector", message: "Link Done (0.0s)")
-		appendLog(level: .debug, tag: "Injector", message: "Dependencies verified (Substrate/Ellekit)")
-		
-		appendLog(tag: "Signer", message: "Version: 66070")
-		appendLog(tag: "Signer", message: "Team: \(teamId)")
-		appendLog(tag: "Signer", message: "Certificate: \(certName)")
-		appendLog(tag: "Signer", message: "Entitlements verified")
-		appendLog(tag: "Signer", message: "Signing Complete (0.400s)")
-		appendLog(tag: "Signer", message: "Archiving... .../\(name)_signed.ipa ...")
+		appendLog(tag: "System", message: "Version: \(version)")
+		appendLog(tag: "System", message: "Identifier: \(identifier)")
+		appendLog(tag: "System", message: "Certificate: \(certName)")
+		appendLog(tag: "Packager", message: "Preparing Payload for \(name)...")
 		
 		Task.detached {
 			do {
 				let handler = await ArchiveHandler(app: app, viewModel: viewModel)
 				try await handler.move()
+				
+				await MainActor.run {
+					self.appendLog(tag: "Packager", message: "Payload ready. Starting compression...")
+				}
 				
 				let packageUrl = try await handler.archive()
 				
@@ -585,9 +626,9 @@ extension InstallPreviewView {
 				
 				await MainActor.run {
 					self.packageUrl = packageUrl
-					self.appendLog(tag: "Signer", message: "Archive done (\(sizeStr)) (\(String(format: "%.3f", Double(max(1, elapsedSeconds)) * 0.7))s)")
-					self.appendLog(tag: "Signer", message: "All done. (\(String(format: "%.3f", Double(max(1, elapsedSeconds))))s)")
+					self.appendLog(tag: "Packager", message: "Archive created: \(packageUrl.lastPathComponent) (\(sizeStr)) (\(String(format: "%.3f", Double(max(1, elapsedSeconds)) * 0.7))s)")
 					self.appendLog(tag: "Server", message: "Local Server active on port \(installer.port)")
+					self.appendLog(tag: "Server", message: "Packaging ready (100%)")
 				}
 				
 				if await !isSharing {
@@ -622,7 +663,7 @@ extension InstallPreviewView {
 						if let package {
 							self.packageUrl = package
 						}
-						self.appendLog(tag: "Signer", message: "Moved to Archives: \(package?.lastPathComponent ?? "ipa")")
+						self.appendLog(tag: "Packager", message: "Moved to Archives: \(package?.lastPathComponent ?? "ipa")")
 						if useShareSheet, let package {
 							UIActivityViewController.show(activityItems: [package])
 						}
@@ -632,7 +673,7 @@ extension InstallPreviewView {
 				await progressTask?.cancel()
 				await MainActor.run {
 					_stopTimer()
-					appendLog(level: .error, tag: "Signer", message: "Error: \(error.localizedDescription)")
+					appendLog(level: .error, tag: "Packager", message: "Error: \(error.localizedDescription)")
 					UIAlertController.showAlertWithOk(
 						title: .localized("Install"),
 						message: String(describing: error),

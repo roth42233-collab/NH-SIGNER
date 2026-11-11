@@ -76,7 +76,7 @@ struct FilesView: View {
 	}
 	
 	var body: some View {
-		NBNavigationView("", displayMode: .inline) {
+		NBNavigationView(directoryStack.isEmpty ? "" : currentDirectory.lastPathComponent, displayMode: .inline) {
 			VStack(spacing: 0) {
 				// File List
 				List {
@@ -113,6 +113,21 @@ struct FilesView: View {
 				_storageFooter()
 			}
 			.toolbar {
+				if !directoryStack.isEmpty {
+					ToolbarItem(placement: .topBarLeading) {
+						Button {
+							_navigateBack()
+						} label: {
+							HStack(spacing: 4) {
+								Image(systemName: "chevron.left")
+									.font(.system(size: 16, weight: .semibold))
+								Text(directoryStack.last?.lastPathComponent ?? .localized("Back"))
+									.font(.system(size: 16))
+							}
+						}
+					}
+				}
+				
 				ToolbarItem(placement: .topBarTrailing) {
 					_toolbarMenu()
 				}
@@ -242,17 +257,28 @@ extension FilesView {
 			_navigateBack()
 		} label: {
 			HStack(spacing: 12) {
-				Image(systemName: "arrow.uturn.backward.circle.fill")
-					.font(.system(size: 24))
-					.foregroundColor(.accentColor)
+				ZStack {
+					RoundedRectangle(cornerRadius: 10, style: .continuous)
+						.fill(Color.accentColor.opacity(0.15))
+						.frame(width: 42, height: 42)
+					
+					Image(systemName: "folder.fill.badge.gearshape")
+						.font(.system(size: 20, weight: .medium))
+						.foregroundColor(.accentColor)
+				}
 				
-				VStack(alignment: .leading, spacing: 2) {
-					Text(".. (\(directoryStack.last?.lastPathComponent ?? "Root"))")
-						.font(.system(size: 15, weight: .medium))
+				VStack(alignment: .leading, spacing: 3) {
+					Text(directoryStack.last?.lastPathComponent ?? .localized("Documents"))
+						.font(.system(size: 15, weight: .semibold))
 						.foregroundColor(.primary)
-					Text(.localized("Back to previous folder"))
-						.font(.system(size: 12))
-						.foregroundColor(.secondary)
+					
+					HStack(spacing: 4) {
+						Image(systemName: "chevron.left")
+							.font(.system(size: 10, weight: .bold))
+						Text(.localized("Back to parent folder"))
+							.font(.system(size: 12))
+					}
+					.foregroundColor(.secondary)
 				}
 				Spacer()
 			}
